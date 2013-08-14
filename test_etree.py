@@ -2,126 +2,164 @@ import urllib2
 
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
-from xml.etree.ElementTree import SubElement
+#from xml.etree.ElementTree import SubElement
 
-from xml.dom import minidom
-from xml.dom.minidom import parseString
+#*paramters*
+#bounding box
 
-def prettify(elem):
-    """Return a pretty-printed XML string for the Element.
-    """
-    rough_string = ElementTree.tostring(elem, 'utf-8')
-    reparsed = minidom.parseString(rough_string)
-    return reparsed.toprettyxml(indent="  ")
+"""
+#test area
+left = '-122.675'
+bottom = '45.520'
+right = '-122.670'
+top = '45.525'
+"""
 
+#larger portland core
+left = '-122.71'
+bottom = '45.50'
+right = '-122.65'
+top = '45.54'
 
-
-changesets = urllib2.urlopen('http://api.openstreetmap.org/api/0.6/changesets?bbox=-122.675,45.520,-122.670,45.525?time=2013-04-00T00:00:00Z')
-
-
-osm = urllib2.urlopen('http://api.openstreetmap.org/api/0.6/map?bbox=-122.675,45.520,-122.670,45.525')
-
-
-
-changesets = ElementTree.parse(changesets)
-osm = ElementTree.parse(osm)
-
-#print document
-
-root = changesets.getroot()
-
-
-print root.tag
-print root.attrib
-
-
-changesets = []
-
-
-for child in root:
-  #print child.tag
- 
-
-  if(child.tag == 'changeset'): 
-    #print child.attrib
-    date = child.attrib['created_at'].split('-')
-
- 
-    if(int(date[0]) >= 2013 and int(date[1]) >= 4):
-      #print child.attrib['user'] + " " + child.attrib['created_at']
-      changesets.append(child.attrib['id'])
+#date
+year = 2013
+month = 4
+#url = 'http://api.openstreetmap.org/api/0.6/map?bbox=' + left + "," + bottom + "," + right + "," + top
+out_file = 'P://osm/modified.osm'
+orig_file = 'P://osm/orig.osm'
 
 
 
-#for item in changesets:
-#  print item
 
-root = osm.getroot()
+url = 'http://overpass-api.de/api/map?bbox=' + left + "," + bottom + "," + right + "," + top
 
-for child in root:
-  if(child.tag == 'node' or child.tag == 'way' or child.tag == 'relation'):
-    change_id = child.attrib['changeset']
-  
+print url
 
+#download osm file from openstreetmap using bounding box paramters
+osm_file = urllib2.urlopen(str(url))
+
+
+#parse downloaded osm file into element tree
+osm_tree = ElementTree.parse(osm_file)
+
+#write out original recieved file
+osm_tree.write(orig_file)
+
+#create empty list to store ids for recently modified features
+recent_nodes = []
+recent_ways = []
+recent_relations = []
+
+#create empty list for nodes that will be required
+required_nodes = []
+required_ways = []
+
+#insert id for features with timestamp after specified date into correct list
+root = osm_tree.getroot()
+
+for child in root.findall('node'):
+
+    date = child.attrib['timestamp'].split('-')
+    if(int(date[0]) >= year and int(date[1]) >= month):
+        required_nodes.append(child.attrib['id'])
+        child.append(Element('tag', {'k': 'recent', 'v': 'true'}))
+
+
+#go back and add search for the way containing the updated 
+for child in root.findall('way'):
+
+    for node in required_nodes:
+            for sub_element in child.iter('nd'):
+                if(node == sub_element.attrib['ref']):
+                    required_ways.append(child.attrib['id'])
+
+for child in root.findall('way'):
+
+    #recent ways
+    date = child.attrib['timestamp'].split('-')
+    if(int(date[0]) >= year and int(date[1]) >= month):
+        required_ways.append(child.attrib['id'])
+        child.append(Element('tag', {'k': 'recent', 'v': 'true'}))
+            
+            #add all nodes from recent way to required_nodes list
+        for sub_element in child.iter('nd'):
+            required_nodes.append(sub_element.attrib['ref'])
+          
+for child in root.findall('relation'):
+
+    #recent relations
+    date = child.attrib['timestamp'].split('-')
+    if(int(date[0]) >= year and int(date[1]) >= month):
+        recent_relations.append(child.attrib['id'])
+        child.append(Element('tag', {'k': 'recent', 'v': 'true'}))
+
+        #add all nodes from recent way to required_nodes list
+        for sub_element in child.iter('member'):
+            if(sub_element.attrib['type'] == 'node'):
+                required_nodes.append(sub_element.attrib['ref'])
+            if(sub_element.attrib['type'] == 'way'):
+                required_ways.append(sub_element.attrib['ref'])
+
+
+
+#go back and add any nodes still needed from ways added to required_ways from recent_relations
+for child in root.findall('way'):
+
+    for way in required_ways:
+        if(child.attrib['id'] == way):
+            for sub_element in child.iter('nd'):
+                required_nodes.append(sub_element.attrib['ref'])
+
+
+#remove duplicates from list
+required_nodes = list(set(required_nodes))
+required_ways = list(set(required_ways))
+
+
+#remove any elements from osm file that are not needed
+#search for matching feature in correct required list for match
+#if there is no match remove feature from element tree
+for child in root.findall('node'):
+    #node
+    node_count += 1
+    #print child.tag + " - " + child.attrib['id']
     found = False
-    for check in changesets:
-      if(check == change_id):
-        found = True
-        print child.tag
-        print child.attrib['timestamp']
+    for node in required_nodes:
+        if(node == child.attrib['id']):
+            found = True
 
     if(found == False):
-      root.remove(child)
-        #print "Match"
-        #print changeset + " " + change
-        #print child.attrib['user']
-
-  #print child.tag
-
-print root.tag
-print root.attrib
-
-osm.write('/home/jeff/trimet/create.osm')
-#output_file = open('/home/jeff/trimet/create.osm', 'w' )
-#output_file.write(osm)
-#output_file.close()
+        node_remove_count += 1
+        root.remove(child)
 
 
+for child in root.findall('way'):
+    #way
+    way_count += 1
+    found = False
+    for node in required_ways:
+        if(node == child.attrib['id']):
+            found = True
 
-#osm = document.find('osm')
-#bound = document.find('bound')
-
-#print bound.attrib['minlat']
-
-
-#osm = Element( 'osm', version="0.6",
-#                      generator="CGImap 0.2.0",
-#                      copyright="OpenStreetMap and contributors",
-#                      attribution="http://www.openstreetmap.org/copyright",
-#                      license="http://opendatacommons.org/licenses/odbl/1-0/")
-
+    if(found == False):
+        way_remove_count += 1
+        root.remove(child)
 
 
+for child in root.findall('relation'):
+    #relation
+    #root.remove(child)
 
-"""
-# <membership><users/>
-bounds = SubElement( osm, 'bounds')
+        found = False
+        for node in recent_relations:
+            if(node == child.attrib['id']):
+                found == True
 
-# <membership><users><user/>
-SubElement( osm, 'id', v='1' )
-SubElement( osm, 'id', v='2' )
-SubElement( osm, 'id', v='2' )
-
-print prettify(osm)
-
-print "\n\n\n\n"
-
-print osm
-
-output_file = open( "home/jeff/trimet/osm/create.osm", 'w' )
-output_file.write( prettify(osm) )
-output_file.close()
+        if(found == False):
+           root.remove(child)
 
 
-#<bounds minlat="45.5200000" minlon="-122.6750000" maxlat="45.5250000" maxlon="-122.6700000"/>
-"""
+#write out modified osm file
+osm_tree.write(out_file)
+
+
