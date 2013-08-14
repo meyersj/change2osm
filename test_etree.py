@@ -18,15 +18,18 @@ top = '45.525'
 #larger portland core
 left = '-122.71'
 bottom = '45.50'
-right = '-122.65'
-top = '45.54'
+right = '-122.70'
+top = '45.51'
 
 #date
 year = 2013
 month = 4
 #url = 'http://api.openstreetmap.org/api/0.6/map?bbox=' + left + "," + bottom + "," + right + "," + top
-out_file = 'P://osm/modified.osm'
-orig_file = 'P://osm/orig.osm'
+
+out_file = '/home/jeff/osm/modified.osm'
+orig_file = '/home/jeff/osm/orig.osm'
+#out_file = 'P://osm/modified.osm'
+#orig_file = 'P://osm/orig.osm'
 
 
 
@@ -121,7 +124,6 @@ required_ways = list(set(required_ways))
 #if there is no match remove feature from element tree
 for child in root.findall('node'):
     #node
-    node_count += 1
     #print child.tag + " - " + child.attrib['id']
     found = False
     for node in required_nodes:
@@ -129,20 +131,17 @@ for child in root.findall('node'):
             found = True
 
     if(found == False):
-        node_remove_count += 1
         root.remove(child)
 
 
 for child in root.findall('way'):
     #way
-    way_count += 1
     found = False
     for node in required_ways:
         if(node == child.attrib['id']):
             found = True
 
     if(found == False):
-        way_remove_count += 1
         root.remove(child)
 
 
