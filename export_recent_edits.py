@@ -16,8 +16,8 @@ month = 4
 
 #out_file = 'P://osm/modified.osm'
 #orig_file = 'P://osm/orig.osm'
-out_file = '/home/jeff/trimet/modified_over7.osm'
-orig_file = '/home/jeff/trimet/orig_over7.osm'
+out_file = '/home/jeff/trimet/modified.osm'
+orig_file = '/home/jeff/trimet/orig.osm'
 
 #------------------------------------------
 
@@ -79,6 +79,8 @@ try:
         if(child.attrib['id'] not in required_nodes):        
             root.remove(child)
     
+
+    required_nodes = []
      
     #select all nodes with a recent timestamp
     print "searching for recent nodes"
