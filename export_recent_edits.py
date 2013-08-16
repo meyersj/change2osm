@@ -5,10 +5,10 @@ from xml.etree.ElementTree import Element
 #------------------------------------------
 #required paramters
 #bounding box
-left = '-122.67'
+left = '-122.66'
 bottom = '45.51'
-right = '-122.66'
-top = '45.52'
+right = '-122.63'
+top = '45.54'
 
 #date (inclusive)
 year = 2013
@@ -16,8 +16,8 @@ month = 4
 
 #out_file = 'P://osm/modified.osm'
 #orig_file = 'P://osm/orig.osm'
-out_file = '/home/jeff/trimet/modified_over2.osm'
-orig_file = '/home/jeff/trimet/orig_over2.osm'
+out_file = '/home/jeff/trimet/modified_over7.osm'
+orig_file = '/home/jeff/trimet/orig_over7.osm'
 
 #------------------------------------------
 
@@ -53,7 +53,33 @@ try:
     recent_relations = []
     required_nodes = []
     required_ways = []
+    remove_nodes = []
+    
+    #select out only ways with a highway tag
+    print "removing ways without highway tag"
+    for child in root.findall('way'):
+	
+	highway = False
+	for sub_element in child.iter('tag'):
+            if(sub_element.attrib['k'] == 'highway'):
+                highway = True
+        if(highway == False):
+            root.remove(child)
+        else:
+            for sub_element in child.iter('nd'):
+                required_nodes.append(sub_element.attrib['ref'])  
 
+    required_nodes = list(set(required_nodes))
+
+    
+    #remove nodes that were not part of way with highway tag
+    print "removing nodes not part of a way with highway tag"
+    for child in root.findall('node'):
+    
+        if(child.attrib['id'] not in required_nodes):        
+            root.remove(child)
+    
+     
     #select all nodes with a recent timestamp
     print "searching for recent nodes"
     for child in root.findall('node'):
@@ -62,7 +88,7 @@ try:
 	if(int(date[0]) >= year and int(date[1]) >= month):
 	    required_nodes.append(child.attrib['id'])
 	    child.append(Element('tag', {'k': 'recent', 'v': 'true'}))
-
+    
 
     #go back and search for ways containing recent nodes
     print "searching for ways with recent nodes"
@@ -86,10 +112,12 @@ try:
 	    for sub_element in child.iter('nd'):
 		required_nodes.append(sub_element.attrib['ref'])
 
+    
     #search for recent relations
     print "searching for recent relations"
     for child in root.findall('relation'):
-
+        root.remove(child)
+    """
 	date = child.attrib['timestamp'].split('-')
 	if(int(date[0]) >= year and int(date[1]) >= month):
 	    recent_relations.append(child.attrib['id'])
@@ -101,6 +129,7 @@ try:
 		    required_nodes.append(sub_element.attrib['ref'])
 		if(sub_element.attrib['type'] == 'way'):
 		    required_ways.append(sub_element.attrib['ref'])
+    """
 
     #go back and add any nodes still needed from ways
     #added to required_ways from recent_relations
