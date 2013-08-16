@@ -114,12 +114,10 @@ try:
 	    for sub_element in child.iter('nd'):
 		required_nodes.append(sub_element.attrib['ref'])
 
-    
+    """
     #search for recent relations
     print "searching for recent relations"
     for child in root.findall('relation'):
-        root.remove(child)
-    """
 	date = child.attrib['timestamp'].split('-')
 	if(int(date[0]) >= year and int(date[1]) >= month):
 	    recent_relations.append(child.attrib['id'])
@@ -154,35 +152,21 @@ try:
     print "removing non required nodes"
     for child in root.findall('node'):
 
-	found = False
-	for node in required_nodes:
-	    if(node == child.attrib['id']):
-		found = True
-
-	if(found == False):
+	if(child.attrib['id'] not in required_nodes):
 	    root.remove(child)
 
     print "removing non required ways"
     for child in root.findall('way'):
 
-	found = False
-	for node in required_ways:
-	    if(node == child.attrib['id']):
-		found = True
-
-	if(found == False):
+	if(child.attrib['id'] not in required_ways):
 	    root.remove(child)
 
-    print "removing non required relations"
+    print "removing non recent relations"
     for child in root.findall('relation'):
-
-	    found = False
-	    for node in recent_relations:
-		if(node == child.attrib['id']):
-		    found = True
-
-	    if(found == False):
-	       root.remove(child)
+        root.remove(child)
+        
+	#if(child.attrib['id'] not in recente_relations):
+	#    root.remove(child)
 
     #write out modified osm file
     print "writing file to " + out_file
