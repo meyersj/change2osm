@@ -14,10 +14,10 @@ top = '45.54'
 year = 2013
 month = 4
 
-#out_file = 'P://osm/modified.osm'
-#orig_file = 'P://osm/orig.osm'
-out_file = '/home/jeff/trimet/modified.osm'
-orig_file = '/home/jeff/trimet/orig.osm'
+out_file = 'P://osm/output/modified_3.osm'
+orig_file = 'P://osm/output/orig_3.osm'
+#out_file = '/home/jeff/trimet/modified_3.osm'
+#orig_file = '/home/jeff/trimet/orig_3.osm'
 
 #------------------------------------------
 
@@ -58,11 +58,11 @@ try:
     #select out only ways with a highway tag
     print "removing ways without highway tag"
     for child in root.findall('way'):
-	
-	highway = False
-	for sub_element in child.iter('tag'):
+    
+        highway = False
+        for sub_element in child.iter('tag'):
             if(sub_element.attrib['k'] == 'highway'):
-                highway = True
+                    highway = True
         if(highway == False):
             root.remove(child)
         else:
@@ -86,60 +86,60 @@ try:
     print "searching for recent nodes"
     for child in root.findall('node'):
 
-	date = child.attrib['timestamp'].split('-')
-	if(int(date[0]) >= year and int(date[1]) >= month):
-	    required_nodes.append(child.attrib['id'])
-	    child.append(Element('tag', {'k': 'recent', 'v': 'true'}))
+        date = child.attrib['timestamp'].split('-')
+        if(int(date[0]) >= year and int(date[1]) >= month):
+            required_nodes.append(child.attrib['id'])
+            child.append(Element('tag', {'k': 'recent', 'v': 'true'}))
     
 
     #go back and search for ways containing recent nodes
     print "searching for ways with recent nodes"
     for child in root.findall('way'):
-	
-	for node in required_nodes:
-		for sub_element in child.iter('nd'):
-		    if(node == sub_element.attrib['ref']):
-			required_ways.append(child.attrib['id'])
+    
+        for node in required_nodes:
+            for sub_element in child.iter('nd'):
+                if(node == sub_element.attrib['ref']):
+                    required_ways.append(child.attrib['id'])
 
     #search for recent ways
     print "searching for recent ways"
     for child in root.findall('way'):
-	
-	date = child.attrib['timestamp'].split('-')
-	if(int(date[0]) >= year and int(date[1]) >= month):
-	    required_ways.append(child.attrib['id'])
-	    child.append(Element('tag', {'k': 'recent', 'v': 'true'}))
-		
-		#add all nodes from recent way to required_nodes list
-	    for sub_element in child.iter('nd'):
-		required_nodes.append(sub_element.attrib['ref'])
+    
+        date = child.attrib['timestamp'].split('-')
+        if(int(date[0]) >= year and int(date[1]) >= month):
+            required_ways.append(child.attrib['id'])
+            child.append(Element('tag', {'k': 'recent', 'v': 'true'}))
+            
+            #add all nodes from recent way to required_nodes list
+            for sub_element in child.iter('nd'):
+                required_nodes.append(sub_element.attrib['ref'])
 
-    """
+    
     #search for recent relations
     print "searching for recent relations"
     for child in root.findall('relation'):
-	date = child.attrib['timestamp'].split('-')
-	if(int(date[0]) >= year and int(date[1]) >= month):
-	    recent_relations.append(child.attrib['id'])
-	    child.append(Element('tag', {'k': 'recent', 'v': 'true'}))
+        date = child.attrib['timestamp'].split('-')
+        if(int(date[0]) >= year and int(date[1]) >= month):
+            recent_relations.append(child.attrib['id'])
+            child.append(Element('tag', {'k': 'recent', 'v': 'true'}))
 
-	    #add all nodes from recent way to required_nodes list
-	    for sub_element in child.iter('member'):
-		if(sub_element.attrib['type'] == 'node'):
-		    required_nodes.append(sub_element.attrib['ref'])
-		if(sub_element.attrib['type'] == 'way'):
-		    required_ways.append(sub_element.attrib['ref'])
-    """
+            #add all nodes from recent way to required_nodes list
+            for sub_element in child.iter('member'):
+                if(sub_element.attrib['type'] == 'node'):
+                    required_nodes.append(sub_element.attrib['ref'])
+                if(sub_element.attrib['type'] == 'way'):
+                    required_ways.append(sub_element.attrib['ref'])
+    
 
     #go back and add any nodes still needed from ways
     #added to required_ways from recent_relations
     print "searching for nodes that still need to be included"
     for child in root.findall('way'):
 
-	for way in required_ways:
-	    if(child.attrib['id'] == way):
-		for sub_element in child.iter('nd'):
-		    required_nodes.append(sub_element.attrib['ref'])
+        for way in required_ways:
+            if(child.attrib['id'] == way):
+                for sub_element in child.iter('nd'):
+                    required_nodes.append(sub_element.attrib['ref'])
 
 
     #remove duplicates from list
@@ -152,21 +152,21 @@ try:
     print "removing non required nodes"
     for child in root.findall('node'):
 
-	if(child.attrib['id'] not in required_nodes):
-	    root.remove(child)
+        if(child.attrib['id'] not in required_nodes):
+            root.remove(child)
 
     print "removing non required ways"
     for child in root.findall('way'):
 
-	if(child.attrib['id'] not in required_ways):
-	    root.remove(child)
+        if(child.attrib['id'] not in required_ways):
+            root.remove(child)
 
     print "removing non recent relations"
     for child in root.findall('relation'):
-        root.remove(child)
+        #root.remove(child)
         
-	#if(child.attrib['id'] not in recente_relations):
-	#    root.remove(child)
+        if(child.attrib['id'] not in recent_relations):
+            root.remove(child)
 
     #write out modified osm file
     print "writing file to " + out_file
