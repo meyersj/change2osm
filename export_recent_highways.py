@@ -22,11 +22,9 @@ orig_file = 'P://osm/output/orig_5hun.osm'
 
 
 
-def recent_highways(left, bottom, right, top, year, month, count):
-
-
-    out_file = 'P://osm/output/modified' + str(count) + '.osm'
-    orig_file = 'P://osm/output/orig' + str(count) + '.osm'
+def recent_highways(left, bottom, right, top, year, month, root_path, count):
+    out_file = root_path + 'modified' + str(count) + '.osm'
+    orig_file = root_path + 'orig' + str(count) + '.osm'
 
     start = datetime.now()
     #download osm file from openstreetmap using bounding box paramters
@@ -138,6 +136,8 @@ def recent_highways(left, bottom, right, top, year, month, count):
         required_nodes = list(set(required_nodes))
         required_ways = list(set(required_ways))
 
+
+    
         #remove any elements from osm file that are not needed
         #search for matching feature in correct required list for match
         #if there is no match remove feature from element tree
@@ -173,4 +173,4 @@ def recent_highways(left, bottom, right, top, year, month, count):
     diff = finish - start
     print diff
 
-
+    return {'nodes':required_nodes, 'ways':required_ways}
