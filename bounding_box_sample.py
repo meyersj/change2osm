@@ -1,7 +1,14 @@
 from export_recent_highways import recent_highways
 from datetime import datetime
-from xml.etree import ElementTree
-from xml.etree.ElementTree import Element
+
+try:
+    from xml.etree import cElementTree as ElementTree
+    from xml.etree.cElementTree import Element
+except ImportError:
+    from xml.etree import ElementTree
+    from xml.etree.ElementTree import Element
+
+
 
 start = datetime.now()
 
@@ -14,10 +21,10 @@ month = 4
 #right = -122.271479
 #top = 45.681151
 
-left = -123.0
-bottom = 45.5
-right = -122.8
-top = 45.7
+left = -122.7
+bottom = 45.4
+right = -122.5
+top = 45.6
 
 root_path = '/home/jeff/trimet/' 
 #master = root_path + 'test_map.osm'

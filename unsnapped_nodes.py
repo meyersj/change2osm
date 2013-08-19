@@ -6,10 +6,10 @@ from xml.etree.ElementTree import Element
 #------------------------------------------
 #required paramters
 #bounding box
-left = '-122.80'
-bottom = '45.48'
-right = '-122.79'
-top = '45.49'
+left = '-122.65'
+bottom = '45.49'
+right = '-122.64'
+top = '45.5'
 
 #date (inclusive)
 year = 2013
@@ -18,16 +18,25 @@ month = 4
 #tolerance for how close nodes need to be
 tolerance = 0.000005 
 
-out_file = 'P://osm/output/modified_close.osm'
-orig_file = 'P://osm/output/orig_close.osm'
-#out_file = '/home/jeff/trimet/modified_3.osm'
-#orig_file = '/home/jeff/trimet/orig_3.osm'
+#out_file = 'P://osm/output/modified_close.osm'
+#orig_file = 'P://osm/output/orig_close.osm'
+out_file = '/home/jeff/trimet/modified_close.osm'
+orig_file = '/home/jeff/trimet/orig_close.osm'
 
 #------------------------------------------
 
 #download osm file from openstreetmap using bounding box paramters
 url = 'http://overpass-api.de/api/map?bbox=' + left + "," + bottom + "," + right + "," + top
 #url = 'http://api.openstreetmap.org/api/0.6/map?bbox=' + left + "," + bottom + "," + right + "," + top
+
+
+def New_Tree(root):
+   new_root = Element('osm')
+   new_root.set('version', root.attrib['version'])
+   new_root.append(root.find('bounds'))
+   new_root.append(Element('ERROR'))
+   return ElementTree.ElementTree(new_root)
+
 
 try:
     print "downloading area"
@@ -58,9 +67,14 @@ try:
 
     print "locating all nodes"
     for child in root.iter('node'): 
-        item = {'lat': child.attrib['lat'], 'lon': child.attrib['lon']}
+        item = {'id':child.attrib['id'], \
+                'lat':child.attrib['lat'], \
+                'lon':child.attrib['lon']}
         nodes.append(item)    
 
+
+    new_tree = New_Tree(root)
+    new_root = new_tree.getroot()
     print "checking for unsnapped nodes"
     for node in nodes:
         #print "lat: " + str(node['lat']) + "/lon: " + str(node['lon'])
@@ -70,14 +84,21 @@ try:
             lon_diff = abs(float(child.attrib['lon']) - float(node['lon']))
             lat_diff = abs(float(child.attrib['lat']) - float(node['lat']))
 
-            if(((lat_diff != 0) and (lon_diff != 0)) and
-                 ((lat_diff < tolerance) and (lon_diff < tolerance))):
+            if(lat_diff == 0 and lon_diff == 0):
+                if(node['id'] != child.attrib['id']):
+                    child.append(Element('tag', {'k': 'close', 'v': 'unsnapped'}))
+                    new_root.append(child)
+            elif(lat_diff < tolerance and lon_diff < tolerance):
                 child.append(Element('tag', {'k': 'close', 'v': 'true'}))
+                new_root.append(child)
+
+
+
 
 
     #write out modified osm file
     print "writing file to " + out_file
-    osm_tree.write(out_file)
+    new_tree.write(out_file)
 
 except urllib2.HTTPError, e:
     print e

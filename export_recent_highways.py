@@ -1,7 +1,15 @@
 import urllib2
-from xml.etree import ElementTree
-from xml.etree.ElementTree import Element
 from datetime import datetime
+
+try:
+    from xml.etree import cElementTree as ElementTree
+    from xml.etree.cElementTree import Element
+except ImportError:
+    from xml.etree import ElementTree
+    from xml.etree.ElementTree import Element
+
+
+
 #------------------------------------------
 """
 #required paramters
@@ -95,7 +103,7 @@ def recent_highways(left, bottom, right, top, year, month, root_path, count):
             date = child.attrib['timestamp'].split('-')
             if(int(date[0]) >= year and int(date[1]) >= month):
                 required_nodes.append(child.attrib['id'])
-                child.append(Element('tag', {'k': 'recent', 'v': 'true'}))
+                child.append(Element('tag', {'k': 'recent_node', 'v': 'true'}))
             
 
         #go back and search for ways containing recent nodes
@@ -114,7 +122,7 @@ def recent_highways(left, bottom, right, top, year, month, root_path, count):
             date = child.attrib['timestamp'].split('-')
             if(int(date[0]) >= year and int(date[1]) >= month):
                 required_ways.append(child.attrib['id'])
-                child.append(Element('tag', {'k': 'recent', 'v': 'true'}))
+                child.append(Element('tag', {'k': 'recent_highway', 'v': 'true'}))
                 
                 #add all nodes from recent way to required_nodes list
                 for sub_element in child.iter('nd'):

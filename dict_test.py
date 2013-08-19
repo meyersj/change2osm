@@ -1,15 +1,19 @@
 import urllib2
-from xml.etree import ElementTree
-from xml.etree.ElementTree import Element
 from datetime import datetime
+try:
+    from xml.etree import cElementTree as ElementTree
+    from xml.etree.cElementTree import Element 
+except ImportError:
+    from xml.etree import ElementTree
+    from xml.etree.ElementTree import Element
 #------------------------------------------
 
 #required paramters
 #bounding box
-left = -122.62
-bottom = 45.50
-right = -122.60
-top = 45.52
+left = -122.6
+bottom = 45.4
+right = -122.5
+top = 45.5
 
 #date (inclusive)
 year = 2013
@@ -19,6 +23,7 @@ month = 4
 #orig_file = 'P://osm/output/orig_5hun.osm'
 out_file = '/home/jeff/trimet/modified.osm'
 orig_file = '/home/jeff/trimet/orig.osm'
+
 
 #------------------------------------------
 
@@ -32,116 +37,174 @@ print start
 url = 'http://overpass-api.de/api/map?bbox=' + str(left) + "," + str(bottom) + "," + str(right) + "," + str(top)
 #url = 'http://api.openstreetmap.org/api/0.6/map?bbox=' + left + "," + bottom + "," + right + "," + top
 
-try:
-    print "downloading area"
+
+def Download(left, bottom, right, top):
+    print "downloading area..."
     print "left: " + str(left)
     print "bottom: " + str(bottom)
     print "right: " + str(right)
     print "top: " + str(top)
+    
+    url = 'http://overpass-api.de/api/map?bbox=' + \
+           str(left) + "," + \
+           str(bottom) + "," + \
+           str(right) + "," + \
+           str(top)
 
-    osm_file = urllib2.urlopen(url)
+    results = urllib2.urlopen(url)
+    print "download complete"
+    return results
+   
+def Parse(xml):
+    return ElementTree.parse(xml)
 
-    #parse downloaded osm file into element tree
-    osm_tree = ElementTree.parse(osm_file)
+def New_Tree(root):
+   new_root = Element('osm')
+   new_root.set('version', root.attrib['version'])
+   new_root.append(root.find('bounds'))
+   new_root.append(Element('ERROR'))
+   return ElementTree.ElementTree(new_root)
 
-    #insert id for features with timestamp after specified date into correct list
-    root = osm_tree.getroot()
 
-    #remove extra tags from overpass api
-    child = root.find('note')
-    root.remove(child)
-    child = root.find('meta')
-    root.remove(child)
+def Build_Dictionary(root):
+    nodes = {}
+    ways = {}
+    relations = {}
 
-    #write out original recieved file
-    osm_tree.write(orig_file)
+    for child in root.findall('node'):
+        nodes[child.attrib['id']] = child
+        if(child.attrib['user'] == 'Grant Humphries'):
+            child.append(Element('tag', {'k': 'grant', 'v': 'true'}))
 
-    #create empty list to ids for required features
-    recent_relations = []
-    recent_nodes = []
-    required_nodes = []
-    required_ways = []
-    remove_nodes = []
-
-    highway_nodes = []
-        
-    #select out only ways with a highway tag
-    print "removing ways without highway tag"
     for child in root.findall('way'):
+        ways[child.attrib['id']] = child
+        if(child.attrib['user'] == 'Grant Humphries'):
+            child.append(Element('tag', {'k': 'grant', 'v': 'true'}))
 
+    for child in root.findall('relation'):
+        relations[child.attrib['id']] = child
+        if(child.attrib['user'] == 'Grant Humphries'):
+            child.append(Element('tag', {'k': 'grant', 'v': 'true'}))
+
+    return {'nodes': nodes, 'ways': ways, 'relations': relations}
+   
+
+def Highways(all_ways, from_date):
+    recent_highways = []
+    highway_nodes = []
+    recent_highway_nodes = []
+    highways = []
+
+    for way_id, way in all_ways.items():
         highway = False
-        for sub_element in child.iter('tag'):
+        for sub_element in way.findall('tag'):
             if(sub_element.attrib['k'] == 'highway'):
                 highway = True
+        
+        #if way has highway tag
+        #add all nodes in way to highway_nodes
         if(highway == True):
-            for sub_element in child.iter('nd'):
+            highways.append(way_id)
+            for sub_element in way.findall('nd'):
                 highway_nodes.append(sub_element.attrib['ref'])
-            if(child.attrib['id'] == '5532397'):
-                print "found fucker"
 
-            date = child.attrib['timestamp'].split('-')
-            if(int(date[0]) >= year and int(date[1]) >= month):
-                required_ways.append(child.attrib['id'])
-                child.append(Element('tag', {'k': 'recent', 'v': 'true'}))
-                for sub_element in child.iter('nd'):
-                    required_nodes.append(sub_element.attrib['ref'])
+            date = way.attrib['timestamp'].split('-')
+            if(int(date[0]) >= from_date[0] and int(date[1]) >= month):
+                way.append(Element('tag', {'k': 'recent_highway', 'v': 'true'}))
+                recent_highways.append(way_id)
+                for sub_element in way.findall('nd'):
+                    recent_highway_nodes.append(sub_element.attrib['ref'])
+
             else:
-                child.append(Element('tag', {'k': 'recent', 'v': 'false'}))
-                #root.remove(child)
-    
+                way.append(Element('tag', {'k': 'recent_highway', 'v': 'false'}))
 
-	#select all nodes with a recent timestamp
-    print "searching for recent nodes"
-    for child in root.findall('node'):
+    return {'recent_highways':recent_highways, \
+            'highway_nodes':highway_nodes, \
+            'recent_highway_nodes':recent_highway_nodes, \
+            'highways':highways}
 
-        if(child.attrib['id'] not in highway_nodes):
-            root.remove(child)
+
+def Nodes(all_nodes, highway_nodes, from_date):
+    recent_nodes = []
+
+    for node in highway_nodes:
+        element = all_nodes[node]
+        date = element.attrib['timestamp'].split('-')
+        if(int(date[0]) >= from_date[0] and int(date[1]) >= month):
+            element.append(Element('tag', {'k': 'recent_node', 'v': 'true'}))
+            recent_nodes.append(node)
         else:
-            date = child.attrib['timestamp'].split('-')
-            if(int(date[0]) >= year and int(date[1]) >= month):
-                recent_nodes.append(child.attrib['id'])
-                child.append(Element('tag', {'k': 'recent', 'v': 'true'}))
-            else:
-                child.append(Element('tag', {'k': 'recent', 'v': 'false'}))	
+            element.append(Element('tag', {'k': 'recent_node', 'v': 'false'}))
 
-    #go back and search for ways containing recent nodes
-    print "searching for ways with recent nodes"
-    for child in root.findall('way'):
-    
-        for node in recent_nodes:
-            if(child.attrib['id'] == '5532397'):
-                print "found fucker"
-            for sub_element in child.iter('nd'):
+    return recent_nodes
+
+
+def Required_Ways(all_ways, recent_nodes, highways):
+    new_required_highways = []
+    new_required_nodes = []
+    for way in highways:
+        element = all_ways[way]
+        match = False
+        for sub_element in element.findall('nd'):
+            if(match == True):
+                break
+            for node in recent_nodes:
                 if(node == sub_element.attrib['ref']):
-                    required_ways.append(child.attrib['id'])
-
-    #remove duplicates from list
-    required_nodes = list(set(required_nodes))
-    required_ways = list(set(required_ways))
-    recent_nodes = list(set(recent_nodes))
-    #remove any elements from osm file that are not needed
-    #search for matching feature in correct required list for match
-    #if there is no match remove feature from element tree
-    print "removing non required nodes"
-    for child in root.findall('node'):
-
-        if(child.attrib['id'] not in required_nodes):
-            root.remove(child)
-
-    print "removing non required ways"
-    for child in root.findall('way'):
-
-        if(child.attrib['id'] not in required_ways):
-            root.remove(child)
-
-    print "removing relations"
-    for child in root.findall('relation'):
-        root.remove(child)
-
-    #write out modified osm file
-    print "writing file to " + out_file
-    osm_tree.write(out_file)
+                    new_required_highways.append(element.attrib['id'])
+                    match = True
+                    break
+        if(match == True):
+            for sub_element in element.findall('nd'):
+                new_required_nodes.append(sub_element.attrib['ref'])
     
+    return {'new_required_highways':new_required_highways, \
+            'new_required_nodes':new_required_nodes}
+
+try:
+    from_date = [year, month]
+    tree = Parse(Download(left, bottom, right, top))
+    root = tree.getroot()
+
+    #write out original recieved file
+    tree.write(orig_file)
+
+    #build dictionary for nodes, ways, and relations 
+    #of all features is .osm tree
+    features_dict = Build_Dictionary(root)
+    nodes = features_dict['nodes']
+    ways = features_dict['ways']
+
+
+    highway_results = Highways(ways, from_date)
+    recent_nodes = Nodes(nodes, highway_results['highway_nodes'], from_date)
+    required_highways = Required_Ways(ways, recent_nodes, highway_results['highways'])
+    
+    modified_nodes = []
+    modified_ways = []
+
+    modified_nodes.extend(highway_results['recent_highway_nodes'])
+    modified_nodes.extend(recent_nodes)
+    modified_nodes.extend(required_highways['new_required_nodes'])
+    modified_ways.extend(highway_results['recent_highways'])
+    modified_ways.extend(required_highways['new_required_highways'])
+
+    modified_nodes = list(set(modified_nodes))
+    modified_ways = list(set(modified_ways))
+     
+
+
+    modified_tree = New_Tree(root)
+    modified_root = modified_tree.getroot()
+
+    for node in modified_nodes:
+        modified_root.append(nodes[node])
+
+    for way in modified_ways:
+        modified_root.append(ways[way])
+
+    modified_tree.write(out_file)
+    
+
 except urllib2.HTTPError, e:
     print e
     print "Invalid Bounding Box?"
