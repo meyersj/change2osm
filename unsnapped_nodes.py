@@ -20,7 +20,7 @@ tolerance = 0.000005
 
 #out_file = 'P://osm/output/modified_close.osm'
 #orig_file = 'P://osm/output/orig_close.osm'
-out_file = '/home/jeff/trimet/modified_close.osm'
+out_file = '/home/jeff/trimet/all_nodes.osm'
 orig_file = '/home/jeff/trimet/orig_close.osm'
 
 #------------------------------------------
@@ -31,12 +31,30 @@ url = 'http://overpass-api.de/api/map?bbox=' + left + "," + bottom + "," + right
 
 
 def New_Tree(root):
-   new_root = Element('osm')
-   new_root.set('version', root.attrib['version'])
-   new_root.append(root.find('bounds'))
-   new_root.append(Element('ERROR'))
-   return ElementTree.ElementTree(new_root)
+    new_root = Element('osm')
+    new_root.set('version', root.attrib['version'])
+    new_root.append(root.find('bounds'))
+    new_root.append(Element('ERROR'))
+    return ElementTree.ElementTree(new_root)
 
+def Grab_Nodes(root):
+    #remove extra tags from overpass api
+    child = root.find('note')
+    root.remove(child)
+    child = root.find('meta')
+    root.remove(child)
+
+    for node in root.findall('node'):
+        node.append(Element('tag', {'k':'id', 'v':node.attrib['id']}))
+
+    for child in root.findall('way'):
+        root.remove(child)
+
+    for child in root.findall('relation'):
+        root.remove(child)
+   
+    return root   
+        
 
 try:
     print "downloading area"
@@ -49,20 +67,17 @@ try:
     #osm_file = open('P://osm/output/modified2.osm')
     #parse downloaded osm file into element tree
     osm_tree = ElementTree.parse(osm_file)
-
     #insert id for features with timestamp after specified date into correct list
-    root = osm_tree.getroot()
     
-    #remove extra tags from overpass api
-    child = root.find('note')
-    root.remove(child)
-    child = root.find('meta')
-    root.remove(child)
 
     #write out original recieved file
     osm_tree.write(orig_file)
 
+    root = osm_tree.getroot()
+    root = Grab_Nodes(root)
 
+
+    """
     nodes = []
 
     print "locating all nodes"
@@ -91,14 +106,14 @@ try:
             elif(lat_diff < tolerance and lon_diff < tolerance):
                 child.append(Element('tag', {'k': 'close', 'v': 'true'}))
                 new_root.append(child)
-
+    """
 
 
 
 
     #write out modified osm file
     print "writing file to " + out_file
-    new_tree.write(out_file)
+    osm_tree.write(out_file)
 
 except urllib2.HTTPError, e:
     print e
