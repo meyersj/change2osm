@@ -10,19 +10,19 @@ except ImportError:
 
 #required paramters
 #bounding box
-left = -122.6
-bottom = 45.4
-right = -122.5
-top = 45.5
+#left = -122.6
+#bottom = 45.4
+#right = -122.5
+#top = 45.5
 
 #date (inclusive)
-year = 2013
-month = 4
+#year = 2013
+#month = 4
 
 #out_file = 'P://osm/output/modified_5hund.osm'
 #orig_file = 'P://osm/output/orig_5hun.osm'
-out_file = '/home/jeff/trimet/modified.osm'
-orig_file = '/home/jeff/trimet/orig.osm'
+#out_file = '/home/jeff/trimet/modified.osm'
+#orig_file = '/home/jeff/trimet/orig.osm'
 
 
 #------------------------------------------
@@ -34,7 +34,7 @@ start = datetime.now()
 print start 
 
 #download osm file from openstreetmap using bounding box paramters
-url = 'http://overpass-api.de/api/map?bbox=' + str(left) + "," + str(bottom) + "," + str(right) + "," + str(top)
+#url = 'http://overpass-api.de/api/map?bbox=' + str(left) + "," + str(bottom) + "," + str(right) + "," + str(top)
 #url = 'http://api.openstreetmap.org/api/0.6/map?bbox=' + left + "," + bottom + "," + right + "," + top
 
 
@@ -109,7 +109,7 @@ def Highways(all_ways, from_date):
                 highway_nodes.append(sub_element.attrib['ref'])
 
             date = way.attrib['timestamp'].split('-')
-            if(int(date[0]) >= from_date[0] and int(date[1]) >= month):
+            if(int(date[0]) >= from_date[0] and int(date[1]) >= from_date[1]):
                 way.append(Element('tag', {'k': 'recent_highway', 'v': 'true'}))
                 recent_highways.append(way_id)
                 for sub_element in way.findall('nd'):
@@ -130,7 +130,7 @@ def Nodes(all_nodes, highway_nodes, from_date):
     for node in highway_nodes:
         element = all_nodes[node]
         date = element.attrib['timestamp'].split('-')
-        if(int(date[0]) >= from_date[0] and int(date[1]) >= month):
+        if(int(date[0]) >= from_date[0] and int(date[1]) >= from_date[1]):
             element.append(Element('tag', {'k': 'recent_node', 'v': 'true'}))
             recent_nodes.append(node)
         else:
@@ -160,60 +160,66 @@ def Required_Ways(all_ways, recent_nodes, highways):
     return {'new_required_highways':new_required_highways, \
             'new_required_nodes':new_required_nodes}
 
-try:
-    from_date = [year, month]
-    tree = Parse(Download(left, bottom, right, top))
-    root = tree.getroot()
-
-    #write out original recieved file
-    tree.write(orig_file)
-
-    #build dictionary for nodes, ways, and relations 
-    #of all features is .osm tree
-    features_dict = Build_Dictionary(root)
-    nodes = features_dict['nodes']
-    ways = features_dict['ways']
-
-
-    highway_results = Highways(ways, from_date)
-    recent_nodes = Nodes(nodes, highway_results['highway_nodes'], from_date)
-    required_highways = Required_Ways(ways, recent_nodes, highway_results['highways'])
+def Modified(left, bottom, right, top, year, month, root_path, count):
+    url = 'http://overpass-api.de/api/map?bbox=' + \
+          str(left) + "," + str(bottom) + "," + str(right) + "," + str(top)
     
-    modified_nodes = []
-    modified_ways = []
-
-    modified_nodes.extend(highway_results['recent_highway_nodes'])
-    modified_nodes.extend(recent_nodes)
-    modified_nodes.extend(required_highways['new_required_nodes'])
-    modified_ways.extend(highway_results['recent_highways'])
-    modified_ways.extend(required_highways['new_required_highways'])
-
-    modified_nodes = list(set(modified_nodes))
-    modified_ways = list(set(modified_ways))
-     
+    modified_file = root_path + 'modified' + str(count) + '.osm'
+    orig_file = root_path + 'orig' + str(count) + '.osm'
 
 
-    modified_tree = New_Tree(root)
-    modified_root = modified_tree.getroot()
+    try:
+	from_date = [year, month]
+	tree = Parse(Download(left, bottom, right, top))
+	root = tree.getroot()
 
-    for node in modified_nodes:
-        modified_root.append(nodes[node])
+	#write out original recieved file
+	tree.write(orig_file)
 
-    for way in modified_ways:
-        modified_root.append(ways[way])
+	#build dictionary for nodes, ways, and relations 
+	#of all features is .osm tree
+	features_dict = Build_Dictionary(root)
+	nodes = features_dict['nodes']
+	ways = features_dict['ways']
 
-    modified_tree.write(out_file)
-    
+	highway_results = Highways(ways, from_date)
+	recent_nodes = Nodes(nodes, highway_results['highway_nodes'], from_date)
+	required_highways = Required_Ways(ways, recent_nodes, highway_results['highways'])
+	
+	modified_nodes = []
+	modified_ways = []
 
-except urllib2.HTTPError, e:
-    print e
-    print "Invalid Bounding Box?"
-except urllib2.URLError, e:
-    print e
+	#combine needed nodes and ways from different lists
+	modified_nodes.extend(highway_results['recent_highway_nodes'])
+	modified_nodes.extend(recent_nodes)
+	modified_nodes.extend(required_highways['new_required_nodes'])
+	modified_ways.extend(highway_results['recent_highways'])
+	modified_ways.extend(required_highways['new_required_highways'])
+	
+	modified_nodes = list(set(modified_nodes))
+	modified_ways = list(set(modified_ways))
+
+	modified_tree = New_Tree(root)
+	modified_root = modified_tree.getroot()
+
+	for node in modified_nodes:
+	    modified_root.append(nodes[node])
+
+	for way in modified_ways:
+	    modified_root.append(ways[way])
+
+	modified_tree.write(modified_file)
+	
+
+    except urllib2.HTTPError, e:
+	print e
+	print "Invalid Bounding Box?"
+    except urllib2.URLError, e:
+	print e
 
 
-finish = datetime.now()
-print finish
+    finish = datetime.now()
+    print finish
 
-diff = finish - start
-print diff
+    diff = finish - start
+    print diff
