@@ -23,8 +23,8 @@ month = 4
 #top = 45.681151
 
 left = -122.6
-bottom = 45.5
-right = -122.5
+bottom = 45.4
+right = -122.4
 top = 45.6
 
 root_path = '/home/jeff/trimet/output/' 
@@ -147,9 +147,9 @@ while row > bottom:
 print "analyzed all areas"
 
 
-osm = New_Tree(left, bottom, right, top)
-results = Build_Master_Dictionary(count, root_path)
-Build_Final_File(osm, results, root_path)
+#osm = New_Tree(left, bottom, right, top)
+#results = Build_Master_Dictionary(count, root_path)
+#Build_Final_File(osm, results, root_path)
 
 
 
