@@ -22,8 +22,8 @@ month = 4
 #right = -122.271479
 #top = 45.681151
 
-left = -122.7
-bottom = 45.4
+left = -122.6
+bottom = 45.5
 right = -122.5
 top = 45.6
 

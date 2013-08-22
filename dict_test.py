@@ -62,7 +62,6 @@ def New_Tree(root):
    new_root = Element('osm')
    new_root.set('version', root.attrib['version'])
    new_root.append(root.find('bounds'))
-   new_root.append(Element('ERROR'))
    return ElementTree.ElementTree(new_root)
 
 
