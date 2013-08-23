@@ -6,6 +6,8 @@ try:
 except ImportError:
     from xml.etree import ElementTree
     from xml.etree.ElementTree import Element
+
+
 #------------------------------------------
 
 #required paramters
@@ -159,9 +161,12 @@ def Required_Ways(all_ways, recent_nodes, highways):
     return {'new_required_highways':new_required_highways, \
             'new_required_nodes':new_required_nodes}
 
-def Modified(left, bottom, right, top, year, month, root_path, count):
-    url = 'http://overpass-api.de/api/map?bbox=' + \
-          str(left) + "," + str(bottom) + "," + str(right) + "," + str(top)
+
+#def Modified(left, bottom, right, top, year, month, root_path, count):
+def Modified(year, month, root_path, count):
+
+   # url = 'http://overpass-api.de/api/map?bbox=' + \
+   #       str(left) + "," + str(bottom) + "," + str(right) + "," + str(top)
     
     modified_file = root_path + 'modified' + str(count) + '.osm'
     orig_file = root_path + 'orig' + str(count) + '.osm'
@@ -169,8 +174,9 @@ def Modified(left, bottom, right, top, year, month, root_path, count):
 
     try:
 	from_date = [year, month]
-	tree = Parse(Download(left, bottom, right, top))
-	root = tree.getroot()
+	#tree = Parse(Download(left, bottom, right, top))
+	tree = Parse('/home/jeff/trimet/output/highways.osm')
+        root = tree.getroot()
 
 	#write out original recieved file
 	tree.write(orig_file)
@@ -222,3 +228,6 @@ def Modified(left, bottom, right, top, year, month, root_path, count):
 
     diff = finish - start
     print diff
+
+Modified(2013, 4, '/home/jeff/trimet/output/', 5)
+

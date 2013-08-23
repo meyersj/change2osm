@@ -1,15 +1,16 @@
-from export_recent_highways import recent_highways
+"""
 from dict_test import Modified
-from datetime import datetime
-
 try:
     from xml.etree import cElementTree as ElementTree
     from xml.etree.cElementTree import Element
 except ImportError:
     from xml.etree import ElementTree
     from xml.etree.ElementTree import Element
-
-
+"""
+from datetime import datetime
+import urllib2
+import shutil
+import subprocess
 
 start = datetime.now()
 
@@ -17,19 +18,45 @@ start = datetime.now()
 year = 2013
 month = 4
 
-#left = -123.177212
-#bottom = 45.241791
-#right = -122.271479
-#top = 45.681151
+"""
+Test Area
+left = -122.736059
+bottom = 45.309679
+right = -122.236059
+top = 45.809679
+"""
 
-left = -122.6
-bottom = 45.4
-right = -122.4
-top = 45.6
+left = -122.4
+bottom = 45.5
+right = -122.35
+top = 45.55
 
 root_path = '/home/jeff/trimet/output/' 
 #master = root_path + 'test_map.osm'
 #master = root_path + 'map.osm'
+
+
+def Download(left, bottom, right, top, out_file):
+    print "Downloading"
+    url = 'http://overpass-api.de/api/map?bbox=' + \
+           str(left) + "," + str(bottom) + "," + str(right) + "," + str(top)
+
+    xml = urllib2.urlopen(url)
+    print "Download Complete"
+    with open(out_file, 'wb') as fp:
+        shutil.copyfileobj(xml, fp)
+
+
+def Select_Highways(in_file):
+    osmosis = "osmosis"
+    rx = "--rx"
+    wx = "--wx"
+    sort = "--s"
+    tf_highway = "--tf accept-ways highway=* --used-node"
+    out_file = "all_highways.osm"
+    command = " ".join([osmosis, rx, in_file, sort, tf_highway, wx, out_file])
+    subprocess.call(command, shell=True)
+    print command
 
 
 def Build_Master_Dictionary(count, root_path):
@@ -101,7 +128,7 @@ print start
 #master_tree = ElementTree.parse(master)
 #root = master_tree.getroot()
 count = 1
-inc = 0.1
+inc = 0.25
 
 row = top
 sub_left = left
@@ -126,8 +153,8 @@ while row > bottom:
           str(round(sub_right, 1)) + ", " + \
           str(round(sub_top, 1))
     
-    results = Modified(sub_left, sub_bottom, sub_right, sub_top, \
-                       year, month, root_path, count)
+    #results = Modified(sub_left, sub_bottom, sub_right, sub_top, \
+    #                   year, month, root_path, count)
 
     #all_required_nodes.extend(results['nodes'])
     #all_required_ways.extend(results['ways'])
@@ -146,6 +173,10 @@ while row > bottom:
 
 print "analyzed all areas"
 
+
+out_file = "output.osm"
+Download(left, bottom, right, top, out_file)
+Select_Highways(out_file)
 
 #osm = New_Tree(left, bottom, right, top)
 #results = Build_Master_Dictionary(count, root_path)
