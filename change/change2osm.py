@@ -21,82 +21,48 @@ def Identify(change_path):
     create_relations = {}
     needed_nodes = {}
     
-    print "...delete"
     for child in change_root.findall('delete'):
-        print 'node'
         for node in child.findall('node'):
-	    print node.attrib['id']
             node.append(Element('tag', {'k':'change', 'v':'delete'}))
 	    delete_nodes[node.attrib['id']] = node
-        #way
-        print 'way'
+        
         for way in child.findall('way'):
-	    print way.attrib['id']
 	    way.append(Element('tag', {'k':'change', 'v':'delete'}))
             for sub_element in way.findall('nd'):
                 needed_nodes[sub_element.attrib['ref']] = sub_element.attrib['ref']
             delete_ways[way.attrib['id']] = way
+            if(way.attrib['id'] == '128573258'):
+                print "found delete way"
 
-        #relation
-        #for relation in child.findall('relation'):
-	#    print relation.attrib['id']
-	#    delete_relations[relation.attrib['id']] = relation.attrib['id']
-
-    print "...modify"
     for child in change_root.findall('modify'):
-        #node
-        print child.tag
-        print 'node'
         for node in child.findall('node'):
-	    print node.attrib['id']
             node.append(Element('tag', {'k':'change', 'v':'modify'}))
 	    modify_nodes[node.attrib['id']] = node
-        #way
-        print 'way'
+        
         for way in child.findall('way'):
-	    print way.attrib['id']
             way.append(Element('tag', {'k':'change', 'v':'modify'}))
             for sub_element in way.findall('nd'):
                 needed_nodes[sub_element.attrib['ref']] = sub_element.attrib['ref']
 	    modify_ways[way.attrib['id']] = way
 
-        #relation
-        #for relation in child.findall('relation'):
-	#    print relation.attrib['id']
-	#    modify_relations[relation.attrib['id']] = relation
-
-    print "...create"
     for child in change_root.findall('create'):
-        #node
-        print child.tag
-        print 'node'
         for node in child.findall('node'):
-	    print node.attrib['id']
 	    node.append(Element('tag', {'k':'change', 'v':'create'}))
             create_nodes[node.attrib['id']] = node
-        #way
-        print 'way'
         for way in child.findall('way'):
-	    print way.attrib['id']
 	    way.append(Element('tag', {'k':'change', 'v':'create'}))
             for sub_element in way.findall('nd'):
                 needed_nodes[sub_element.attrib['ref']] = sub_element.attrib['ref']
             create_ways[way.attrib['id']] = way
-
-        #relation
-        #for relation in child.findall('relation'):
-	#    print relation.attrib['id']
-	#    create_relations[relation.attrib['id']] = relation
+            if(way.attrib['id'] == '233469174'):
+                print "found create way"
 
     return {'delete_nodes':delete_nodes, \
             'delete_ways':delete_ways, \
-            'delete_relations':delete_relations, \
             'modify_nodes':modify_nodes, \
             'modify_ways':modify_ways, \
-            'modify_relations':modify_relations, \
             'create_nodes':create_nodes, \
             'create_ways':create_ways, \
-            'create_relations':create_relations, \
             'needed_nodes':needed_nodes}
 
 def New_Tree(old_root):
@@ -114,13 +80,10 @@ def Build(results, old_path, out_path):
 
     delete_nodes = results['delete_nodes']
     delete_ways = results['delete_ways']
-    #delete_relations = results['delete_relations']
     modify_nodes = results['modify_nodes']
     modify_ways = results['modify_ways']
-    #modify_relations = results['modify_relations']
     create_nodes = results['create_nodes']
     create_ways = results['create_ways']
-    #create_relations = results['create_relations']
     needed_nodes = results['needed_nodes']
 
 
@@ -133,6 +96,7 @@ def Build(results, old_path, out_path):
         elif match in create_nodes:
             new_root.append(create_nodes[match])
         elif match in needed_nodes:
+            node.append(Element('tag', {'k':'change', 'v':'false'}))
             new_root.append(node)
 
 
