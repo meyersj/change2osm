@@ -117,8 +117,6 @@ def Build(results, old_file, out_file):
             new_root.append(delete_nodes[match])
         elif match in modify_nodes:
             new_root.append(modify_nodes[match])
-        elif match in create_nodes:
-            new_root.append(create_nodes[match])
         elif match in needed_nodes:
             node.append(Element('tag', {'k':'change', 'v':'false'}))
             new_root.append(node)
@@ -130,8 +128,14 @@ def Build(results, old_file, out_file):
             new_root.append(delete_ways[match])
         elif match in modify_ways:
             new_root.append(modify_ways[match])
-        elif match in create_ways:
-            new_root.append(create_ways[match])
+        
+
+    for node in create_nodes.keys():
+        new_root.append(create_nodes[node])
+    for way in create_ways.keys():
+        new_root.append(create_ways[way])
+
+    
 
 
     new_tree.write(out_file)
