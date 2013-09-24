@@ -1,31 +1,23 @@
-import subprocess
+import subprocess, sys, os, csv, change2osm
 
-"""
-filter out only ways that have a highway tag
+old_osm = sys.argv[1]
+new_osm = sys.argv[2]
+users_path = sys.argv[3]
 
-osmosis \  
---read-xml 08132013_multnomah-SE.osm \
---tag-filter accept-ways highway=* \
---used-node \                        
---write-xml 0813_highways.osm \        
+users = []
 
-osmosis \                        
---read-xml 08272013_multnomah-SE.osm \
---tag-filter accept-ways highway=* \
---used-node \                        
---write-xml 0827_highways.osm \        
+try:
+    approved_users = csv.reader(open(users_path, 'rb'))
+    for user in approved_users:
+        users.append(str(user)[2:-2])
+    print users
+except:
+    print "users list not being used"
 
 
-derive change file from old and new highway filtered osm files
 
-osmosis                            
---read-xml 0813_highways.osm \   
---read-xml 0827_highways.osm \
---derive-change \ 
---write-xml-change 0813_to_0827_change.osm \       
-"""
 
-osmosis = 'osmosis'
+osmosis = 'osmosis -q'
 read_xml = '--rx'
 write_xml = '--wx'
 derive_change = '--dc'
@@ -34,28 +26,39 @@ tagfilter_highways = '--tf accept-ways highway=*'
 tagfilter_relations = '--tf accept-relations type=restriction'
 used_node = '--un'
 
-old_osm = '08132013_multnomah.osm'
-new_osm = '08272013_multnomah.osm'
-old_highways = '0813_highways.osm'
-new_highways = '0827_highways.osm'
-change = '0813_to_0827_change.osm'
-final = '0813_to_0827.osm'
+old_file, old_ext = os.path.splitext(old_osm)
+new_file, new_ext = os.path.splitext(new_osm)
+
+old_highways = 'old_highways.osm'
+new_highways = 'new_highways.osm'
+change = 'change.osm'
+final = new_file + "_" + "change.osm"
+
+
 
 process_old = " ".join([osmosis, read_xml, old_osm, tagfilter_highways, \
-                        used_node, tagfilter_relations, write_xml, old_highways])
-
+			used_node, tagfilter_relations, write_xml, old_highways])
 process_new = " ".join([osmosis, read_xml, new_osm, tagfilter_highways, \
-                        used_node, tagfilter_relations, write_xml, new_highways])
-
+			used_node, tagfilter_relations, write_xml, new_highways])
 process_change = " ".join([osmosis, read_xml, new_highways, read_xml, \
-                            old_highways, derive_change, write_change, change])
+			    old_highways, derive_change, write_change, change])
 
-process_create = " ".join(["python", "change2osm.py", old_highways, change, final])
-
+print "filtering out highway=* ways"
 subprocess.call(process_old, shell=True)
 subprocess.call(process_new, shell=True)
-subprocess.call(process_change, shell=True)
-subprocess.call(process_create, shell=True)
 
+print "deriving change file"
+subprocess.call(process_change, shell=True)
+
+print "building osm file from change file"
+results = change2osm.Identify(change, users)
+change2osm.Build(results, old_osm, final)
+
+print "cleaning up"
+os.remove(old_highways)
+os.remove(new_highways)
+#os.remove(change)
+
+print "process complete"
 
 

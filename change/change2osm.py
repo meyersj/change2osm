@@ -8,15 +8,15 @@ from xml.etree.cElementTree import Element
 #out_path = '/home/jeff/trimet/osm/change/0813_to_0827.osm'
 
 
-old_file = sys.argv[1]
-change_file = sys.argv[2]
-out_file = sys.argv[3]
+#old_file = sys.argv[1]
+#change_file = sys.argv[2]
+#out_file = sys.argv[3]
 
-print old_file
-print change_file
-print out_file
+#print old_file
+#print change_file
+#print out_file
 
-def Identify(change_file):
+def Identify(change_file, users):
     change_tree = ElementTree.parse(change_file)
     change_root = change_tree.getroot()
 
@@ -33,50 +33,59 @@ def Identify(change_file):
     
     for child in change_root.findall('delete'):
         for node in child.findall('node'):
+            #if(node.attrib['user'] not in users):
             node.append(Element('tag', {'k':'change', 'v':'delete'}))
 	    delete_nodes[node.attrib['id']] = node
         
         for way in child.findall('way'):
-	    way.append(Element('tag', {'k':'change', 'v':'delete'}))
+	    #if(way.attrib['user'] not in users):
+            way.append(Element('tag', {'k':'change', 'v':'delete'}))
             for sub_element in way.findall('nd'):
                 needed_nodes[sub_element.attrib['ref']] = sub_element.attrib['ref']
             delete_ways[way.attrib['id']] = way
 
         for relation in child.findall('relation'):
-	    relation.append(Element('tag', {'k':'change', 'v':'delete'}))
+            #if(relation.attrib['user'] not in users):
+            relation.append(Element('tag', {'k':'change', 'v':'delete'}))
             delete_relations[relation.attrib['id']] = relation
 
 
     for child in change_root.findall('modify'):
         for node in child.findall('node'):
-            node.append(Element('tag', {'k':'change', 'v':'modify'}))
-	    modify_nodes[node.attrib['id']] = node
+            if(node.attrib['user'] not in users):
+                node.append(Element('tag', {'k':'change', 'v':'modify'}))
+	        modify_nodes[node.attrib['id']] = node
         
         for way in child.findall('way'):
-            way.append(Element('tag', {'k':'change', 'v':'modify'}))
-            for sub_element in way.findall('nd'):
-                needed_nodes[sub_element.attrib['ref']] = sub_element.attrib['ref']
-	    modify_ways[way.attrib['id']] = way
+            if(way.attrib['user'] not in users):
+                way.append(Element('tag', {'k':'change', 'v':'modify'}))
+                for sub_element in way.findall('nd'):
+                    needed_nodes[sub_element.attrib['ref']] = sub_element.attrib['ref']
+	        modify_ways[way.attrib['id']] = way
 
         for relation in child.findall('relation'):
-	    relation.append(Element('tag', {'k':'change', 'v':'modify'}))
-            modify_relations[relation.attrib['id']] = relation
+            if(relation.attrib['user'] not in users):
+                relation.append(Element('tag', {'k':'change', 'v':'modify'}))
+                modify_relations[relation.attrib['id']] = relation
 
 
     for child in change_root.findall('create'):
         for node in child.findall('node'):
-	    node.append(Element('tag', {'k':'change', 'v':'create'}))
-            create_nodes[node.attrib['id']] = node
+            if(node.attrib['user'] not in users):
+	        node.append(Element('tag', {'k':'change', 'v':'create'}))
+                create_nodes[node.attrib['id']] = node
 
         for way in child.findall('way'):
-	    way.append(Element('tag', {'k':'change', 'v':'create'}))
-            for sub_element in way.findall('nd'):
-                needed_nodes[sub_element.attrib['ref']] = sub_element.attrib['ref']
-            create_ways[way.attrib['id']] = way
+            if(way.attrib['user'] not in users):
+	        way.append(Element('tag', {'k':'change', 'v':'create'}))
+                for sub_element in way.findall('nd'):
+                    needed_nodes[sub_element.attrib['ref']] = sub_element.attrib['ref']
+                create_ways[way.attrib['id']] = way
         
         for relation in child.findall('relation'):
-	    relation.append(Element('tag', {'k':'change', 'v':'create'}))
-            create_relations[relation.attrib['id']] = relation
+            if(relation.attrib['user'] not in users):
+	        relation.append(Element('tag', {'k':'change', 'v':'create'}))
+                create_relations[relation.attrib['id']] = relation
 
     return {'delete_nodes':delete_nodes, \
             'delete_ways':delete_ways, \
@@ -92,7 +101,11 @@ def Identify(change_file):
 def New_Tree(old_root):
     new_root = Element('osm')
     new_root.set('version', old_root.attrib['version'])
-    new_root.append(old_root.find('bounds'))
+    try:
+        new_root.append(old_root.find('bounds'))
+    except:
+        new_root.append(old_root.find('bound'))
+
     return ElementTree.ElementTree(new_root)
 
 
@@ -138,11 +151,11 @@ def Build(results, old_file, out_file):
     
 
 
-    new_tree.write(out_file)
+    new_tree.write(out_file, xml_declaration=True, encoding="utf-8", method="xml")
 
 
 
-results = Identify(change_file)
-Build(results, old_file, out_file)
+#results = Identify(change_file)
+#Build(results, old_file, out_file)
 
 
