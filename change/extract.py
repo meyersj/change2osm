@@ -33,62 +33,57 @@ def main(argv):
     except:
         print "pre-approved users list not being used"
 
-    osmosis = 'osmosis -q'
-    read_xml = '--rx'
-    write_xml = '--wx'
-    derive_change = '--dc'
-    write_change = '--wxc'
-    tagfilter_highways = '--tf accept-ways highway=*'
-    tagfilter_relations = '--tf accept-relations type=restriction'
-    used_node = '--un'
-
-    old_file, old_ext = os.path.splitext(old_osm)
-    new_file, new_ext = os.path.splitext(new_osm)
-
     old_highways = 'old_highways.osm'
     new_highways = 'new_highways.osm'
     change = 'change.osm'
-    final = new_file + "_" + "change.osm"
+    new_file, new_ext = os.path.splitext(new_osm)
+    final = new_file + "_" + change
 
-    process_old = " ".join([osmosis, read_xml, old_osm, tagfilter_highways, \
-            used_node, tagfilter_relations, write_xml, old_highways])
-    process_new = " ".join([osmosis, read_xml, new_osm, tagfilter_highways, \
-            used_node, tagfilter_relations, write_xml, new_highways])
-    process_change = " ".join([osmosis, read_xml, new_highways, read_xml, \
-            old_highways, derive_change, write_change, change])
+    filter_osm = 'osmosis -q --rx %s --tf accept-ways highway=* '\
+                 '--un --tf accept-relations type=restriction '\
+                 '--wx %s'
 
+    derive_change = 'osmosis -q --rx %s --rx %s --dc --wxc %s'
 
+    old_filter_command = filter_osm % (old_osm, old_highways)
+    new_filter_command = filter_osm % (new_osm, new_highways)
+    derive_change_command = derive_change % (new_highways, old_highways, change)
+    
     try:
-        print "filtering out highway=* ways"
-        subprocess.check_call(process_old, shell=True)
+        print "Filtering out ways with highway tag from old .osm file"
+        print "  executing: " + old_filter_command
+        subprocess.check_call(old_filter_command, shell=True)
     except subprocess.CalledProcessError:
         print "failed to process old .osm file"
         sys.exit(2)
 
     try:
-        subprocess.check_call(process_new, shell=True)
+        print "Filtering out ways with highway tag from new .osm file"
+        print "  executing: " + new_filter_command
+        subprocess.check_call(new_filter_command, shell=True)
     except subprocess.CalledProcessError:
         print "failed to process new .osm file"
         sys.exit(2)
 
     try:
-        print "deriving change file"
-        subprocess.check_call(process_change, shell=True)
+        print "Deriving change file"
+        print "  executing: " + derive_change_command
+        subprocess.check_call(derive_change_command, shell=True)
     except subprocess.CalledProcessError:
         print "failed to derive change file"
         sys.exit(2)
 
 
-    print "building osm file from change file"
+    print "Building .osm file from change file"
     results = change2osm.Identify(change, users)
     change2osm.Build(results, old_osm, final)
 
-    print "cleaning up"
+    print "Cleaning up"
     os.remove(old_highways)
     os.remove(new_highways)
     os.remove(change)
 
-    print "process complete"
+    print "Process complete"
     
 if __name__ == "__main__":
     main(sys.argv[1:])
