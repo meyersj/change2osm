@@ -1,15 +1,20 @@
 import subprocess, sys, os, csv, change2osm, getopt
 
 def usage():
-    print "Usage:"
+    print "Usage:\n"
     print "Script creates .osm file showing changes between two .osm files"
     print "python extract.py -o <old> -n <new> [-u <users>]"
     print "-o specify old .osm file"
     print "-n specify new .osm file"
     print "-u include a list of preapproved users whose edits are ignored"
-    print "    users list should be csv or text file with names seperated by carrige return"
+    print "    text file with one user name per line"
 
 def main(argv):
+    
+    #process parameters passed from command line
+    #-o <old osm file path>
+    #-n <new osm file path>
+    #-u <text file with user names to inlcude>
     try:
         opts, args = getopt.getopt(argv, "o:n:u:", ["old", "new", "users"])
     except getopt.GetoptError:
@@ -31,7 +36,7 @@ def main(argv):
         for user in approved_users:
             users.append(str(user)[2:-2])
     except:
-        print "pre-approved users list not being used"
+        print "Pre-approved users list not being used"
 
     old_highways = 'old_highways.osm'
     new_highways = 'new_highways.osm'
@@ -51,26 +56,26 @@ def main(argv):
     
     try:
         print "Filtering out ways with highway tag from old .osm file"
-        print "  executing: " + old_filter_command
+        print "  Executing: " + old_filter_command
         subprocess.check_call(old_filter_command, shell=True)
     except subprocess.CalledProcessError:
-        print "failed to process old .osm file"
+        print "Failed to process old .osm file"
         sys.exit(2)
 
     try:
         print "Filtering out ways with highway tag from new .osm file"
-        print "  executing: " + new_filter_command
+        print "  Executing: " + new_filter_command
         subprocess.check_call(new_filter_command, shell=True)
     except subprocess.CalledProcessError:
-        print "failed to process new .osm file"
+        print "Failed to process new .osm file"
         sys.exit(2)
 
     try:
         print "Deriving change file"
-        print "  executing: " + derive_change_command
+        print "  Executing: " + derive_change_command
         subprocess.check_call(derive_change_command, shell=True)
     except subprocess.CalledProcessError:
-        print "failed to derive change file"
+        print "Failed to derive change file"
         sys.exit(2)
 
 
@@ -87,3 +92,7 @@ def main(argv):
     
 if __name__ == "__main__":
     main(sys.argv[1:])
+
+
+
+

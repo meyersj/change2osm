@@ -33,57 +33,61 @@ def Identify(change_file, users):
     
     for child in change_root.findall('delete'):
         for node in child.findall('node'):
-            #if(node.attrib['user'] not in users):
             node.append(Element('tag', {'k':'change', 'v':'delete'}))
 	    delete_nodes[node.attrib['id']] = node
         
         for way in child.findall('way'):
-	    #if(way.attrib['user'] not in users):
             way.append(Element('tag', {'k':'change', 'v':'delete'}))
             for sub_element in way.findall('nd'):
                 needed_nodes[sub_element.attrib['ref']] = sub_element.attrib['ref']
             delete_ways[way.attrib['id']] = way
 
         for relation in child.findall('relation'):
-            #if(relation.attrib['user'] not in users):
             relation.append(Element('tag', {'k':'change', 'v':'delete'}))
             delete_relations[relation.attrib['id']] = relation
 
 
     for child in change_root.findall('modify'):
         for node in child.findall('node'):
-            if(node.attrib['user'] not in users):
+            #if(node.attrib['user'] not in users):
+            if(node.attrib['user'] in users):
+  
                 node.append(Element('tag', {'k':'change', 'v':'modify'}))
 	        modify_nodes[node.attrib['id']] = node
         
         for way in child.findall('way'):
-            if(way.attrib['user'] not in users):
+            #if(way.attrib['user'] not in users):
+            if(way.attrib['user'] in users):
                 way.append(Element('tag', {'k':'change', 'v':'modify'}))
                 for sub_element in way.findall('nd'):
                     needed_nodes[sub_element.attrib['ref']] = sub_element.attrib['ref']
 	        modify_ways[way.attrib['id']] = way
 
         for relation in child.findall('relation'):
-            if(relation.attrib['user'] not in users):
+            #if(relation.attrib['user'] not in users):
+            if(relation.attrib['user'] in users):
                 relation.append(Element('tag', {'k':'change', 'v':'modify'}))
                 modify_relations[relation.attrib['id']] = relation
 
 
     for child in change_root.findall('create'):
         for node in child.findall('node'):
-            if(node.attrib['user'] not in users):
+            #if(node.attrib['user'] not in users):
+            if(node.attrib['user'] in users):
 	        node.append(Element('tag', {'k':'change', 'v':'create'}))
                 create_nodes[node.attrib['id']] = node
 
         for way in child.findall('way'):
-            if(way.attrib['user'] not in users):
+            #if(way.attrib['user'] not in users):
+            if(way.attrib['user'] in users):
 	        way.append(Element('tag', {'k':'change', 'v':'create'}))
                 for sub_element in way.findall('nd'):
                     needed_nodes[sub_element.attrib['ref']] = sub_element.attrib['ref']
                 create_ways[way.attrib['id']] = way
         
         for relation in child.findall('relation'):
-            if(relation.attrib['user'] not in users):
+            #if(relation.attrib['user'] not in users):
+            if(relation.attrib['user'] in users):
 	        relation.append(Element('tag', {'k':'change', 'v':'create'}))
                 create_relations[relation.attrib['id']] = relation
 
