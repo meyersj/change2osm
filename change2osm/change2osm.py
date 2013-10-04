@@ -1,165 +1,98 @@
-import urllib2
-import sys
-from xml.etree import cElementTree as ElementTree
-from xml.etree.cElementTree import Element
+import subprocess, sys, os, csv, convert, getopt
 
-#old_path = '/home/jeff/trimet/osm/change/0813_highways.osm'
-#change_path = '/home/jeff/trimet/osm/change/0813_to_0827_change.osm'
-#out_path = '/home/jeff/trimet/osm/change/0813_to_0827.osm'
+def usage():
+    print "Usage:\n"
+    print "Script creates .osm file showing changes between two .osm files"
+    print "python extract.py -o <old> -n <new> [-u <users>]"
+    print "-o specify old .osm file"
+    print "-n specify new .osm file"
+    print "-u include a list of preapproved users whose edits are ignored"
+    print "    text file with one user name per line"
 
-
-#old_file = sys.argv[1]
-#change_file = sys.argv[2]
-#out_file = sys.argv[3]
-
-#print old_file
-#print change_file
-#print out_file
-
-def Identify(change_file, users):
-    change_tree = ElementTree.parse(change_file)
-    change_root = change_tree.getroot()
-
-    delete_nodes = {}
-    delete_ways = {}
-    delete_relations = {}
-    modify_nodes = {}
-    modify_ways = {}
-    modify_relations = {}
-    create_nodes = {}
-    create_ways = {}
-    create_relations = {}
-    needed_nodes = {}
+def main(argv):
     
-    for child in change_root.findall('delete'):
-        for node in child.findall('node'):
-            node.append(Element('tag', {'k':'change', 'v':'delete'}))
-	    delete_nodes[node.attrib['id']] = node
-        
-        for way in child.findall('way'):
-            way.append(Element('tag', {'k':'change', 'v':'delete'}))
-            for sub_element in way.findall('nd'):
-                needed_nodes[sub_element.attrib['ref']] = sub_element.attrib['ref']
-            delete_ways[way.attrib['id']] = way
-
-        for relation in child.findall('relation'):
-            relation.append(Element('tag', {'k':'change', 'v':'delete'}))
-            delete_relations[relation.attrib['id']] = relation
-
-
-    for child in change_root.findall('modify'):
-        for node in child.findall('node'):
-            #if(node.attrib['user'] not in users):
-            if(node.attrib['user'] in users):
-  
-                node.append(Element('tag', {'k':'change', 'v':'modify'}))
-	        modify_nodes[node.attrib['id']] = node
-        
-        for way in child.findall('way'):
-            #if(way.attrib['user'] not in users):
-            if(way.attrib['user'] in users):
-                way.append(Element('tag', {'k':'change', 'v':'modify'}))
-                for sub_element in way.findall('nd'):
-                    needed_nodes[sub_element.attrib['ref']] = sub_element.attrib['ref']
-	        modify_ways[way.attrib['id']] = way
-
-        for relation in child.findall('relation'):
-            #if(relation.attrib['user'] not in users):
-            if(relation.attrib['user'] in users):
-                relation.append(Element('tag', {'k':'change', 'v':'modify'}))
-                modify_relations[relation.attrib['id']] = relation
-
-
-    for child in change_root.findall('create'):
-        for node in child.findall('node'):
-            #if(node.attrib['user'] not in users):
-            if(node.attrib['user'] in users):
-	        node.append(Element('tag', {'k':'change', 'v':'create'}))
-                create_nodes[node.attrib['id']] = node
-
-        for way in child.findall('way'):
-            #if(way.attrib['user'] not in users):
-            if(way.attrib['user'] in users):
-	        way.append(Element('tag', {'k':'change', 'v':'create'}))
-                for sub_element in way.findall('nd'):
-                    needed_nodes[sub_element.attrib['ref']] = sub_element.attrib['ref']
-                create_ways[way.attrib['id']] = way
-        
-        for relation in child.findall('relation'):
-            #if(relation.attrib['user'] not in users):
-            if(relation.attrib['user'] in users):
-	        relation.append(Element('tag', {'k':'change', 'v':'create'}))
-                create_relations[relation.attrib['id']] = relation
-
-    return {'delete_nodes':delete_nodes, \
-            'delete_ways':delete_ways, \
-            'delete_relations':delete_relations, \
-            'modify_nodes':modify_nodes, \
-            'modify_ways':modify_ways, \
-            'modify_relations':modify_relations, \
-            'create_nodes':create_nodes, \
-            'create_ways':create_ways, \
-            'create_relations':create_relations, \
-            'needed_nodes':needed_nodes}
-
-def New_Tree(old_root):
-    new_root = Element('osm')
-    new_root.set('version', old_root.attrib['version'])
+    #process parameters passed from command line
+    #-o <old osm file path>
+    #-n <new osm file path>
+    #-u <text file with user names to inlcude>
     try:
-        new_root.append(old_root.find('bounds'))
+        opts, args = getopt.getopt(argv, "o:n:u:", ["old", "new", "users"])
+    except getopt.GetoptError:
+        usage()
+        sys.exit(2)
+
+    for opt, arg in opts:
+        if opt in ("-o", "--old"):
+            old_osm = arg
+        elif opt in ("-n", "--new"):
+            new_osm = arg
+        elif opt in ("-u", "--users"):
+            users_path = arg
+
+    users = []
+
+    try:
+        approved_users = csv.reader(open(users_path, 'rb'))
+        for user in approved_users:
+            users.append(str(user)[2:-2])
     except:
-        new_root.append(old_root.find('bound'))
+        print "Pre-approved users list not being used"
 
-    return ElementTree.ElementTree(new_root)
+    old_highways = 'old_highways.osm'
+    new_highways = 'new_highways.osm'
+    change = 'change.osm'
+    new_file, new_ext = os.path.splitext(new_osm)
+    final = new_file + "_" + change
 
+    filter_osm = 'osmosis -q --rx %s --tf accept-ways highway=* '\
+                 '--un --tf accept-relations type=restriction '\
+                 '--wx %s'
 
-def Build(results, old_file, out_file):
-    old_tree = ElementTree.parse(old_file)
-    old_root = old_tree.getroot()
-    new_tree = New_Tree(old_root)
-    new_root = new_tree.getroot()
+    derive_change = 'osmosis -q --rx %s --rx %s --dc --wxc %s'
 
-    delete_nodes = results['delete_nodes']
-    delete_ways = results['delete_ways']
-    modify_nodes = results['modify_nodes']
-    modify_ways = results['modify_ways']
-    create_nodes = results['create_nodes']
-    create_ways = results['create_ways']
-    needed_nodes = results['needed_nodes']
-
-
-    for node in old_root.findall('node'):
-        match = node.attrib['id']
-        if match in delete_nodes:
-            new_root.append(delete_nodes[match])
-        elif match in modify_nodes:
-            new_root.append(modify_nodes[match])
-        elif match in needed_nodes:
-            node.append(Element('tag', {'k':'change', 'v':'false'}))
-            new_root.append(node)
-
-
-    for way in old_root.findall('way'):
-        match = way.attrib['id']
-        if match in delete_ways:
-            new_root.append(delete_ways[match])
-        elif match in modify_ways:
-            new_root.append(modify_ways[match])
-        
-
-    for node in create_nodes.keys():
-        new_root.append(create_nodes[node])
-    for way in create_ways.keys():
-        new_root.append(create_ways[way])
-
+    old_filter_command = filter_osm % (old_osm, old_highways)
+    new_filter_command = filter_osm % (new_osm, new_highways)
+    derive_change_command = derive_change % (new_highways, old_highways, change)
     
+    try:
+        print "Filtering out ways with highway tag from old .osm file"
+        print "  Executing: " + old_filter_command
+        subprocess.check_call(old_filter_command, shell=True)
+    except subprocess.CalledProcessError:
+        print "Failed to process old .osm file"
+        sys.exit(2)
+
+    try:
+        print "Filtering out ways with highway tag from new .osm file"
+        print "  Executing: " + new_filter_command
+        subprocess.check_call(new_filter_command, shell=True)
+    except subprocess.CalledProcessError:
+        print "Failed to process new .osm file"
+        sys.exit(2)
+
+    try:
+        print "Deriving change file"
+        print "  Executing: " + derive_change_command
+        subprocess.check_call(derive_change_command, shell=True)
+    except subprocess.CalledProcessError:
+        print "Failed to derive change file"
+        sys.exit(2)
 
 
-    new_tree.write(out_file, xml_declaration=True, encoding="utf-8", method="xml")
+    print "Building .osm file from change file"
+    results = change2osm.Identify(change, users)
+    change2osm.Build(results, old_osm, final)
+
+    print "Cleaning up"
+    os.remove(old_highways)
+    os.remove(new_highways)
+    os.remove(change)
+
+    print "Process complete"
+    
+if __name__ == "__main__":
+    main(sys.argv[1:])
 
 
-
-#results = Identify(change_file)
-#Build(results, old_file, out_file)
 
 
