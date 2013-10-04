@@ -16,7 +16,7 @@
 	-n <new osm file> (required)
 	-u <text file of each user to exlude on new line> (optional)
 	-f <output path and file name> (optional)
-  -q quiet mode
+        -q quiet mode
 
 ### Example Usage:
 
