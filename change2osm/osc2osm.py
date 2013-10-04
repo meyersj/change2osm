@@ -100,8 +100,7 @@ def Identify(change_file, users):
                 way.append(Element('tag', {'k':'change', 'v':'modify'}))
                 for sub_element in way.findall('nd'):
                     needed_nodes[sub_element.attrib['ref']] = sub_element.attrib['ref']
-	        modify_ways[w
-				ay.attrib['id']] = way
+	        modify_ways[way.attrib['id']] = way
 
         for relation in child.findall('relation'):
             if(relation.attrib['user'] not in users):

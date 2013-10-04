@@ -47,22 +47,27 @@ import subprocess, sys, os, csv, osc2osm, getopt
 # usage()
 # prints out how to help for how to use command
 def usage():
-    print "Usage:\n"
-    print "Script creates .osm file showing changes between two .osm files"
-    print "python extract.py -o <old> -n <new> [-u <users> -f <output file>]"
-    print "-o specify old .osm file"
-    print "-n specify new .osm file"
-    print "-u include a list of preapproved users whose edits are ignored"
-    print "-f output name"
-    print "    text file with one user name per line\n"
-    print "Example: python change2osm.py -o old_osm_file.osm\n"
-          "                              -n new_osm_file.osm\n" 
-          "                              -u users_to_exclude.txt\n"
-	  "                              -f change.osm" 
+    print "Usage:"
+    print "	Script creates .osm file showing changes between two .osm files"
+    print ""
+    print "Arguments:"
+    print "	-o specify old .osm file (required)" 
+    print "	-n specify new .osm file (required)"
+    print "	-u text file with one username per line for user edits to be ignored"
+    print "	-f output name"
+    print ""
+    print "Example:" 
+    print "	python change2osm.py -o old_osm_file.osm"
+    print "                          -n new_osm_file.osm"
+    print "                          -u users_to_exclude.txt"
+    print "                          -f change.osm" 
 
 # main function
 def main(argv):
     final = ""
+    old_osm = ""
+    new_osm = ""
+    users_path = ""
 
     # process parameters passed from command line
     # -o <old osm file path>
@@ -88,22 +93,32 @@ def main(argv):
 	elif opt in ("-f", "--file"):
 	    final = arg
             
+    if new_osm == "" or old_osm == "":
+	print "Error: old osm file and new osm file arguments are required.\n"
+	usage()
+	sys.exit(2)
+
+    print "\n"
+
     # build list of users to exclude
     users = []
-    try:
-        approved_users = csv.reader(open(users_path, 'rb'))
-        for user in approved_users:
-            users.append(str(user)[2:-2])
-    except:
+    
+    if users_path == "":
         print "Pre-approved users list not being used"
-
+    else:
+        try:
+            approved_users = csv.reader(open(users_path, 'rb'))
+            for user in approved_users:
+                users.append(str(user)[2:-2])
+        except:
+            print "Warning: Could not read users list. List is not being used"
 
     old_highways = 'old_highways.osm'
     new_highways = 'new_highways.osm'
     change = 'change.osc'
     new_file, new_ext = os.path.splitext(new_osm)
     if final == "":
-        final = new_file + "_" + change
+        final = new_file + "_change.osm"
 
     # osmosis command used to filter out highways from osm file
     filter_osm = 'osmosis -q --rx %s --tf accept-ways highway=* '\
@@ -134,6 +149,7 @@ def main(argv):
         subprocess.check_call(new_filter_command, shell=True)
     except subprocess.CalledProcessError:
         print "Failed to process new .osm file"
+        os.remove(old_highways)
         sys.exit(2)
 
     try:
@@ -142,6 +158,8 @@ def main(argv):
         subprocess.check_call(derive_change_command, shell=True)
     except subprocess.CalledProcessError:
         print "Failed to derive change file"
+	os.remove(new_highways)
+	os.remove(old_highways)
         sys.exit(2)
 
 
