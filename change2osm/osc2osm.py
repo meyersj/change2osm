@@ -2,7 +2,7 @@
 File: osc2osm.py
 Created by: Jeffrey Meyers
 Email: jeffrey dot meyers at pdx dot edu
-On: 10/4/2013
+Created on: 10/4/2013
 Modified: 10/4/2013
 
 This file contains functions used to convert an openstreetmap change file
@@ -191,7 +191,7 @@ def Build(results, old_file, out_file):
         elif match in modify_nodes:
             new_root.append(modify_nodes[match])
         elif match in needed_nodes:
-            node.append(Element('tag', {'k':'change', 'v':'false'}))
+            #node.append(Element('tag', {'k':'change', 'v':'false'}))
             new_root.append(node)
 
 

@@ -2,7 +2,7 @@
 File: change2osm.py
 Created by: Jeffrey Meyers
 Email: jeffrey dot meyers at pdx dot edu
-On: 10/4/2013
+Created on: 10/4/2013
 Modified: 10/4/2013
 
 Description:
@@ -19,10 +19,11 @@ Description:
 
 Arguments:
 
-	-o old osm file (required)
-	-n new osm file (required)
-	-u text file of each user to exlude on new line (optional)
-	-f output path and file name (optional)
+	-o <old osm file> (required)
+	-n <new osm file> (required)
+	-u <text file of each user to exlude on new line> (optional)
+	-f <output path and file name> (optional)
+        -q quiet mode
 
 Example Usage:
 
@@ -51,16 +52,17 @@ def usage():
     print "	Script creates .osm file showing changes between two .osm files"
     print ""
     print "Arguments:"
-    print "	-o specify old .osm file (required)" 
-    print "	-n specify new .osm file (required)"
-    print "	-u text file with one username per line for user edits to be ignored"
-    print "	-f output name"
+    print "	-o <specify old .osm file> (required)" 
+    print "	-n <specify new .osm file> (required)"
+    print "	-u <text file with one username per line for user edits to be ignored>"
+    print "	-f <output name>"
+    print "     -q quite mode"
     print ""
     print "Example:" 
-    print "	python change2osm.py -o old_osm_file.osm"
+    print "	python change2osm.py -q -o old_osm_file.osm"
     print "                          -n new_osm_file.osm"
     print "                          -u users_to_exclude.txt"
-    print "                          -f change.osm" 
+    print "                          -f change.osm"
 
 # main function
 def main(argv):
@@ -68,6 +70,7 @@ def main(argv):
     old_osm = ""
     new_osm = ""
     users_path = ""
+    QUIET = False
 
     # process parameters passed from command line
     # -o <old osm file path>
@@ -75,7 +78,7 @@ def main(argv):
     # -u <text file with user names to exclude>
     # -f <output for final file>
     try:
-        opts, args = getopt.getopt(argv, "o:n:u:f:", ["old", "new", "users", "file"])
+        opts, args = getopt.getopt(argv, "o:n:u:f:q", ["old", "new", "users", "file", "quiet"])
 
     # run usage function and exit of parameters are not correct
     except getopt.GetoptError:
@@ -92,7 +95,14 @@ def main(argv):
             users_path = arg
 	elif opt in ("-f", "--file"):
 	    final = arg
+	elif opt in ("-q", "--quiet"):
+	    QUIET = True
             
+
+    if QUIET == True:
+        sys.stdout = open(os.devnull, 'a')
+	sys.stderr = open(os.devnull, 'a')
+
     if new_osm == "" or old_osm == "":
 	print "Error: old osm file and new osm file arguments are required.\n"
 	usage()
@@ -132,8 +142,10 @@ def main(argv):
     old_filter_command = filter_osm % (old_osm, old_highways)
     new_filter_command = filter_osm % (new_osm, new_highways)
     derive_change_command = derive_change % (new_highways, old_highways, change)
-    
+    #derive_change_command = derive_change % (new_osm, old_osm, change)
 
+
+    
     # execute osmosis commands to filter then derive change file
     try:
         print "Filtering out ways with highway tag from old .osm file"
@@ -152,6 +164,7 @@ def main(argv):
         os.remove(old_highways)
         sys.exit(2)
 
+    
     try:
         print "Deriving change file"
         print "  Executing: " + derive_change_command
