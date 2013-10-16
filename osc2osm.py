@@ -74,7 +74,7 @@ def Identify(change_file, users):
     # process all objects in 'delete' tree
     for child in change_root.findall('delete'):
         for node in child.findall('node'):
-            node.append(Element('tag', {'k':'change', 'v':'delete'}))
+            #node.append(Element('tag', {'k':'change', 'v':'delete'}))
 	    delete_nodes[node.attrib['id']] = node
         
         for way in child.findall('way'):
@@ -91,8 +91,7 @@ def Identify(change_file, users):
     for child in change_root.findall('modify'):
         for node in child.findall('node'):
             if(node.attrib['user'] not in users):
-  
-                node.append(Element('tag', {'k':'change', 'v':'modify'}))
+                #node.append(Element('tag', {'k':'change', 'v':'modify'}))
 	        modify_nodes[node.attrib['id']] = node
         
         for way in child.findall('way'):
@@ -111,7 +110,7 @@ def Identify(change_file, users):
     for child in change_root.findall('create'):
         for node in child.findall('node'):
             if(node.attrib['user'] not in users):
-	        node.append(Element('tag', {'k':'change', 'v':'create'}))
+	        #node.append(Element('tag', {'k':'change', 'v':'create'}))
                 create_nodes[node.attrib['id']] = node
 
         for way in child.findall('way'):
