@@ -38,3 +38,5 @@ for old, new, out in files:
     subprocess.check_call(change_command, shell=True)
   except subprocess.CalledProcessError:
     print 'failed to run change script on %s and %s' % (old, new)
+
+  
