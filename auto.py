@@ -4,27 +4,19 @@ from datetime import datetime
 # set directory paths
 cur_dir = 'G:/PUBLIC/OpenStreetMap/data/osm/'
 old_dir = 'G:/PUBLIC/OpenStreetMap/data/osm/bkup/'
-out_dir = 'G:/PUBLIC/OpenStreetMap/data/RLIS_update_2013/edit_reviews/output/'
-script_dir = 'C:/Users/meyersj/Documents/GitHub/change2osm/' 
+out_dir = 'G:/PUBLIC/OpenStreetMap/data/OSM_update/review_edits/output/'
+script_dir = 'G:/PUBLIC/OpenStreetMap/data/OSM_update/review_edits/script/'
 
 out_file = datetime.now().strftime('%m%d%Y') + '_edits_'
 regions = ['clackamas.osm', 'multnomah.osm', 'washington.osm']
-old_files = glob.glob(old_dir + '*.osm')
 
-#extract file names from old directory
-files = []
-for f in old_files:
-  head, tail = os.path.split(f)
-  files.append(tail)
-
-#sort then extract oldest dated file
-files.sort()
-date = files[0][0:9]
+#get the date of the oldest osm file used to build -o argument
+old_date = os.path.split(min(glob.glob(old_dir + '*.osm'), key=os.path.getctime))[1][0:9]
 
 #build list of tuples for each region with old, new and out file names
-files= []
+files = []
 for region in regions:
-  files.append( (old_dir + date + region, cur_dir + region, out_dir + out_file + region) )
+  files.append( (old_dir + old_date + region, cur_dir + region, out_dir + out_file + region) )
 
 #unformatted python command to run change2osm.py script
 change = 'python %s -o %s -n %s -u %s -f %s'
@@ -38,5 +30,4 @@ for old, new, out in files:
     subprocess.check_call(change_command, shell=True)
   except subprocess.CalledProcessError:
     print 'failed to run change script on %s and %s' % (old, new)
-
   
