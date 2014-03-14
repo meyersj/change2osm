@@ -7,7 +7,7 @@ old_dir = 'G:/PUBLIC/OpenStreetMap/data/osm/bkup/'
 out_dir = 'G:/PUBLIC/OpenStreetMap/data/OSM_update/review_edits/output/'
 script_dir = 'G:/PUBLIC/OpenStreetMap/data/OSM_update/review_edits/script/'
 
-out_file = datetime.now().strftime('%m%d%Y') + '_edits_'
+out_file = datetime.now().strftime('%Y%d%m') + '_edits_'
 regions = ['clackamas.osm', 'multnomah.osm', 'washington.osm']
 
 #get the date of the oldest osm file used to build -o argument
@@ -24,7 +24,7 @@ change = 'python %s -o %s -n %s -u %s -f %s'
 #for each region tuple run change2osm.py script
 for old, new, out in files:
   change_command = change % (script_dir + 'change2osm.py', old, new, 
-                             script_dir + 'approved_users_example.txt', out)
+                             script_dir + 'approved_users.txt', out)
   
   try:
     subprocess.check_call(change_command, shell=True)
