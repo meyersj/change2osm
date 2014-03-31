@@ -5,9 +5,9 @@ from datetime import datetime
 cur_dir = 'G:/PUBLIC/OpenStreetMap/data/osm/'
 old_dir = 'G:/PUBLIC/OpenStreetMap/data/osm/bkup/'
 out_dir = 'G:/PUBLIC/OpenStreetMap/data/OSM_update/review_edits/output/'
-script_dir = 'G:/PUBLIC/OpenStreetMap/data/OSM_update/review_edits/script/'
+script_dir = 'G:/PUBLIC/OpenStreetMap/data/OSM_update/review_edits/change2osm/'
 
-out_file = datetime.now().strftime('%Y%d%m') + '_edits_'
+out_file = datetime.now().strftime('%Y%m%d') + '_edits_'
 regions = ['clackamas.osm', 'multnomah.osm', 'washington.osm']
 
 #get the date of the oldest osm file used to build -o argument
